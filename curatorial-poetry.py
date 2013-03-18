@@ -20,7 +20,7 @@ authorize_url = 'http://www.tumblr.com/oauth/authorize'
 import logging
 logging.basicConfig(level=logging.INFO)
 
-if __name__ == '__main__':
+def app(environ, start_response):
 
 	whoami = os.path.abspath(sys.argv[0])
 	bindir = os.path.dirname(whoami)

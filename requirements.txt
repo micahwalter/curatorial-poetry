@@ -1,0 +1,8 @@
+Flask==0.9
+Jinja2==2.6
+Werkzeug==0.8.3
+distribute==0.6.31
+gunicorn==0.17.2
+httplib2==0.8
+oauth2==1.5.211
+wsgiref==0.1.2
