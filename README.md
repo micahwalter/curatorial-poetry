@@ -4,9 +4,6 @@ Curatorial Poetry
 About
 ---
 
-Curatorial Poetry
-===
-
 Curatorial Poetry is a Tumblr blog which automatically posts a new "poem" every two hours. These poems are made up of entries in the description field from the collection metadata of Cooper-Hewitt, National Design Museum. Once hour, a random object record is drawn from over 100,000 possible records. The description field is then posted along with a link to the object's page on the Cooper-Hewitt collection website. There is no other information about the object other than its record ID number.
 
 This project was initially an experiment to learn how to work with the Cooper-Hewitt Collection API, as well as the Tumblr API. It was inspired by the work of the Cooper-Hewitt Labs who had previously built a new collection website from the ground up. On the collection website, whenever an object is presented that has not yet been digitized, the descriptive text is placed where the image would normally appear.
