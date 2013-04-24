@@ -1,1 +1,1 @@
-web: gunicorn app:app -w 3
+web: gunicorn curatorial-poetry:app
