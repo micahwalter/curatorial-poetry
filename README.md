@@ -12,7 +12,7 @@ I quickly noticed that this text was often humorous, and sometimes not very desc
 
 I'm also very interested in the de-coupling of images from this feed of information. I think the "poems" stand on their own and provide an unusual and unexpected way of learning about design. We are always so quick to think in images, but the Internet was built on text, and reading. Whole sub-sections of the net communicate nearly solely based on the written word, and I think this project folds into this idea very nicely.
 
-In the work I do, I tend to go for the simple. I like small projects that leave you guessing and thinking about what is actually going on here. Curatorial-Poetry is "just another little robot-weblog". With the current size of the collection, it should be able to run for about the next 4 years--once every hour. 
+In the work I do, I tend to go for the simple. I like small projects that leave you guessing and thinking about what is actually going on here. Curatorial-Poetry is "just another little robot-weblog". With the current size of the collection, it should be able to run for about the next 4 years--once every two hours. 
 
 Setup
 ---
