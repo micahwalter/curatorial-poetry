@@ -1,1 +1,1 @@
-web: gunicorn curatorial-poetry:app
+timer: python curatorial-poetry.py timed

@@ -1,63 +1,27 @@
-import os
-from flask import Flask, url_for, request
-from flaskext.mysql import MySQL
+#!/usr/bin/python
+import logging, os
+import MySQLdb
 import simplejson as json
-from flask.ext.script import Manager
-import pycurl
 import oauth2 as oauth
 import cStringIO
 import urlparse
 import urllib
-
-app = Flask(__name__)
-mysql = MySQL()
-
-app.config['MYSQL_DATABASE_USER'] = os.environ['MYSQL_USER']
-app.config['MYSQL_DATABASE_PASSWORD'] = os.environ['MYSQL_PASSWORD']
-app.config['MYSQL_DATABASE_HOST'] = os.environ['MYSQL_HOST']
-app.config['MYSQL_DATABASE_DB'] = os.environ['MYSQL_DB']
-app.config['HOSTNAME'] = os.environ['HOSTNAME']
-
-app.config['CONSUMER_KEY'] = os.environ['CONSUMER_KEY']
-app.config['CONSUMER_SECRET'] = os.environ['CONSUMER_SECRET']
-app.config['OAUTH_KEY'] = os.environ['OAUTH_KEY']
-app.config['OAUTH_SECRET'] = os.environ['OAUTH_SECRET']
-
-app.config['TUMBLR_BLOG'] = os.environ['TUMBLR_BLOG']
+from apscheduler.scheduler import Scheduler
 
 request_token_url = 'http://www.tumblr.com/oauth/request_token'
 access_token_url = 'http://www.tumblr.com/oauth/access_token'
 authorize_url = 'http://www.tumblr.com/oauth/authorize'
 
-mysql.init_app(app)
-manager = Manager(app)
+logging.basicConfig()
+sched = Scheduler()
 
-@app.route('/')
-def hello():
+def create_post():
+	cur = db.cursor() 	
+	buf = cStringIO.StringIO()
 	
-	r = getRandom()
+	cur.execute("SELECT * FROM objects WHERE description IS NOT NULL AND published IS NULL ORDER BY RAND() LIMIT 1")
 	
-	html = '<h1>' + str(r['id']) + '</h1>'
-	html = html + "<p>" + r['description'] + "</p>"
-	html = html + '<a href="' + r['url'] + '">' + r['url'] + '</a>'
-		
-	return html
-
-@app.route('/json')
-def jsonstuff():
-	r = getRandom()
-	rsp = json.dumps(r)
-		
-	return rsp
-	
-def getRandom():
-	randomObject = {}
-	
-	cursor = mysql.get_db().cursor()
-	
-	cursor.execute("SELECT * FROM objects WHERE description IS NOT NULL AND published IS NULL ORDER BY RAND() LIMIT 1")
-	
-	row = cursor.fetchall()
+	row = cur.fetchall()
 	
 	for f in row:
 		object_id = f[0]
@@ -65,13 +29,31 @@ def getRandom():
 		url = encode(object_id)
 		url = "http://cprhw.tt/o/" + url
 	
-	cursor.execute("UPDATE objects SET published = 1 WHERE id=" + str(object_id))
+	# post to tumblr blog
+
+	consumer = oauth.Consumer(os.environ['CONSUMER_KEY'], os.environ['CONSUMER_SECRET'])
+	client = oauth.Client(consumer)
+
+	resp, content = client.request(request_token_url, "GET")
+	if resp['status'] != '200':
+		raise Exception("Invalid response %s." % resp['status'])
+
+	request_token = dict(urlparse.parse_qsl(content))
+
+	token = oauth.Token(os.environ['OAUTH_KEY'], os.environ['OAUTH_SECRET'])
+	client = oauth.Client(consumer, token)
 	
-	randomObject['id'] = object_id
-	randomObject['description'] = description
-	randomObject['url'] = url
+	the_body = description + "\n" + "\n" + url
+	params = {
+		'type': 'text',
+		'title': object_id,
+		'body': the_body,
+	}
+
+	requestUrl = "http://api.tumblr.com/v2/blog/" + os.environ['TUMBLR_BLOG'] + "/post"
+	print client.request(requestUrl, method="POST", body=urllib.urlencode(params))
 	
-	return randomObject
+	cur.execute("UPDATE objects SET published = 1 WHERE id=" + str(object_id))
 
 def encode(num):
 	alphabet = '123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
@@ -91,46 +73,24 @@ def encode(num):
 
 	return encode
 
-@manager.command
-def newPost():
-	buf = cStringIO.StringIO()
-	
-	c = pycurl.Curl()
-	curlurl = app.config['HOSTNAME'] + '/json'
-	c.setopt(c.URL, curlurl)
-	c.setopt(c.WRITEFUNCTION, buf.write)
-	c.perform()
-	
-	data = json.loads(buf.getvalue())
+@sched.cron_schedule(hour='*/2')
+def scheduled_job():
+	create_post()
 
-	buf.reset()
-	buf.truncate()
-	
-	# post to tumblr blog
+def run_clock():
+	sched.start()
 
-	consumer = oauth.Consumer(app.config['CONSUMER_KEY'], app.config['CONSUMER_SECRET'])
-	client = oauth.Client(consumer)
-
-	resp, content = client.request(request_token_url, "GET")
-	if resp['status'] != '200':
-		raise Exception("Invalid response %s." % resp['status'])
-
-	request_token = dict(urlparse.parse_qsl(content))
-
-	token = oauth.Token(app.config['OAUTH_KEY'], app.config['OAUTH_SECRET'])
-	client = oauth.Client(consumer, token)
-	
-	the_body = data['description'] + "\n" + "\n" + data['url']
-	params = {
-		'type': 'text',
-		'title': data['id'],
-		'body': the_body,
-	}
-
-	requestUrl = "http://api.tumblr.com/v2/blog/" + app.config['TUMBLR_BLOG'] + "/post"
-	print client.request(requestUrl, method="POST", body=urllib.urlencode(params))
-
-	print "done"
+	while True:
+		pass
 
 if __name__ == "__main__":
-	manager.run()
+	
+	import sys
+	
+	db = MySQLdb.connect(host=os.environ['MYSQL_HOST'], user=os.environ['MYSQL_USER'], passwd=os.environ['MYSQL_PASSWORD'], db=os.environ['MYSQL_DB'])
+	
+	if len(sys.argv) > 1:
+		if (sys.argv[1] == "timed"):
+			run_clock()
+	
+	create_post()
